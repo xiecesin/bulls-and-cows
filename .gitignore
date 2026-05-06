@@ -65,5 +65,9 @@ pnpm-debug.log*
 coverage/
 .nyc_output/
 
+# PID files
+*.pids
+.pids
+
 # IDE
 *.tsbuildinfo

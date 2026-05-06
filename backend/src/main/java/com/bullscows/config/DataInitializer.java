@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,37 +30,84 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         Map<String, Map<String, String>> config = loadConfig();
         
-        // 创建管理员账户
+        // 默认账户（从 config.ini 读取或使用默认值）
+        String adminUser = "admin";
+        String adminPass = "admin123";
+        String adminEmail = "admin@example.com";
+        
+        String testUser = "test";
+        String testPass = "test123";
+        String testEmail = "test@example.com";
+        
+        // 尝试从配置覆盖
         Map<String, String> admin = config.get("admin");
-        if (admin != null && !userRepository.existsByUsername(admin.get("username"))) {
+        if (admin != null) {
+            adminUser = admin.getOrDefault("username", adminUser);
+            adminPass = admin.getOrDefault("password", adminPass);
+            adminEmail = admin.getOrDefault("email", adminEmail);
+        }
+        
+        Map<String, String> test = config.get("test");
+        if (test != null) {
+            testUser = test.getOrDefault("username", testUser);
+            testPass = test.getOrDefault("password", testPass);
+            testEmail = test.getOrDefault("email", testEmail);
+        }
+        
+        // 创建管理员账户
+        if (!userRepository.existsByUsername(adminUser)) {
             User user = new User();
-            user.setUsername(admin.get("username"));
-            user.setPassword(passwordEncoder.encode(admin.get("password")));
-            user.setEmail(admin.get("email"));
+            user.setUsername(adminUser);
+            user.setPassword(passwordEncoder.encode(adminPass));
+            user.setEmail(adminEmail);
             user.setRole(User.Role.ADMIN);
             user.setStatus(User.Status.ACTIVE);
             userRepository.save(user);
-            System.out.println("✓ 管理员账户已创建: " + admin.get("username") + " / " + admin.get("password"));
+            System.out.println("✓ 管理员账户已创建: " + adminUser + " / " + adminPass);
         }
         
         // 创建测试账户
-        Map<String, String> test = config.get("test");
-        if (test != null && !userRepository.existsByUsername(test.get("username"))) {
+        if (!userRepository.existsByUsername(testUser)) {
             User user = new User();
-            user.setUsername(test.get("username"));
-            user.setPassword(passwordEncoder.encode(test.get("password")));
-            user.setEmail(test.get("email"));
+            user.setUsername(testUser);
+            user.setPassword(passwordEncoder.encode(testPass));
+            user.setEmail(testEmail);
             user.setRole(User.Role.USER);
             user.setStatus(User.Status.ACTIVE);
             userRepository.save(user);
-            System.out.println("✓ 测试账户已创建: " + test.get("username") + " / " + test.get("password"));
+            System.out.println("✓ 测试账户已创建: " + testUser + " / " + testPass);
         }
     }
     
     private Map<String, Map<String, String>> loadConfig() {
         Map<String, Map<String, String>> config = new HashMap<>();
         try {
-            BufferedReader reader = new BufferedReader(new FileReader("config.ini"));
+            // 尝试多个路径
+            String[] paths = {
+                "config.ini",
+                "./config.ini",
+                "../config.ini",
+                "backend/config.ini",
+                System.getProperty("user.dir") + "/config.ini",
+                System.getProperty("user.dir") + "/backend/config.ini"
+            };
+            
+            File configFile = null;
+            for (String path : paths) {
+                File f = new File(path);
+                if (f.exists() && f.isFile()) {
+                    configFile = f;
+                    System.out.println("找到配置文件: " + f.getAbsolutePath());
+                    break;
+                }
+            }
+            
+            if (configFile == null) {
+                System.out.println("未找到 config.ini，使用默认账户");
+                return config;
+            }
+            
+            BufferedReader reader = new BufferedReader(new FileReader(configFile));
             String line;
             Map<String, String> currentSection = null;
             String currentSectionName = null;
