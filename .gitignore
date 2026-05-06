@@ -17,6 +17,7 @@ buildNumber.properties
 .idea/
 *.iml
 .vscode/
+.xcodemap/
 *.swp
 *.swo
 .DS_Store
