@@ -29,6 +29,9 @@ logs/
 # Spring Boot
 spring-boot-devtools.properties
 
+# Local config (contains sensitive data)
+backend/config.ini
+
 # Native
 *.hprof
 *.pdb

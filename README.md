@@ -10,12 +10,58 @@
 - **推理解析**：展示详细的解题推理过程
 - **算法展示**：提供 Python/Java 多种解法
 - **变形研究**：展示经典题目的多种变形及最新研究进展
+- **用户系统**：注册登录、练习记录、排行榜
 
 ## 技术栈
 
-- **后端**：Spring Boot 3.2.0 + JDK 21
-- **前端**：Vue 3 + Vite + Element Plus
-- **架构**：前后端分离
+- **后端**：Spring Boot 3.2.0 + JDK 21 + Spring Security + JWT
+- **前端**：Vue 3 + Vite + Element Plus + Pinia
+- **数据库**：H2 (开发) / PostgreSQL (生产)
+- **架构**：前后端分离 REST API
+
+## 快速开始
+
+### 一键启动（推荐）
+
+```bash
+# macOS / Linux
+./start.sh
+
+# Windows
+start.bat
+```
+
+### 手动启动
+
+**后端启动**
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+**前端启动（新开终端）**
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 访问地址
+
+| 服务 | 地址 |
+|------|------|
+| 前端 | http://localhost:3000 |
+| 后端 | http://localhost:8080 |
+| H2 控制台 | http://localhost:8080/h2-console |
+
+### 默认账户
+
+| 类型 | 用户名 | 密码 |
+|------|--------|------|
+| 普通用户 | testuser | password123 |
+| 管理员 | admin | admin123 |
 
 ## 项目结构
 
@@ -24,50 +70,32 @@ bulls-and-cows/
 ├── backend/                 # Spring Boot 后端
 │   ├── src/main/java/com/bullscows/
 │   │   ├── BullsCowsApplication.java
-│   │   ├── controller/      # REST API 控制器
-│   │   ├── service/          # 业务逻辑层
-│   │   └── model/            # 数据模型
+│   │   ├── config/         # 配置类
+│   │   ├── controller/     # REST API 控制器
+│   │   ├── service/        # 业务逻辑层
+│   │   ├── repository/     # 数据访问层
+│   │   ├── entity/        # 实体类
+│   │   ├── dto/           # 数据传输对象
+│   │   └── model/         # 领域模型
 │   └── pom.xml
 ├── frontend/                # Vue 3 前端
 │   ├── src/
-│   │   ├── views/           # 页面组件
-│   │   ├── components/      # 通用组件
-│   │   ├── router/           # 路由配置
-│   │   └── api/              # API 调用
+│   │   ├── api/           # API 接口
+│   │   ├── views/         # 页面组件
+│   │   ├── stores/        # Pinia 状态
+│   │   ├── router/        # 路由配置
+│   │   └── components/    # 通用组件
 │   └── package.json
-└── README.md
+├── docs/                   # 文档目录
+│   ├── getting-started.md # 快速开始
+│   ├── deployment.md      # 部署指南
+│   ├── architecture.md    # 系统设计
+│   └── api.md             # API 文档
+├── start.sh               # 启动脚本 (Linux/Mac)
+├── stop.sh                # 停止脚本 (Linux/Mac)
+├── start.bat              # 启动脚本 (Windows)
+└── stop.bat              # 停止脚本 (Windows)
 ```
-
-## 快速开始
-
-### 后端启动
-
-```bash
-cd backend
-
-# 使用 Maven 启动
-./mvnw spring-boot:run
-
-# 或打包后运行
-./mvnw package
-java -jar target/bulls-and-cows-1.0.0.jar
-```
-
-后端服务将在 http://localhost:8080 启动
-
-### 前端启动
-
-```bash
-cd frontend
-
-# 安装依赖
-npm install
-
-# 启动开发服务器
-npm run dev
-```
-
-前端服务将在 http://localhost:3000 启动（端口被占用时自动切换）
 
 ## 功能模块
 
@@ -75,6 +103,7 @@ npm run dev
 - 随机生成 4 位数字（可含重复）
 - 实时显示 Bulls 和 Cows 数量
 - 猜测历史记录
+- 用时统计
 
 ### 2. 推理解析
 - 逐位对比分析
@@ -95,16 +124,25 @@ npm run dev
 - AI 智能猜测
 - Mastermind 反向版
 
-## API 接口
+### 5. 用户中心
+- 用户注册/登录
+- 个人资料管理
+- 练习记录查看
+- 统计数据展示
 
-| 方法 | 路径 | 描述 |
-|------|------|------|
-| POST | /api/game/start | 开始新游戏 |
-| POST | /api/game/guess | 提交猜测 |
-| POST | /api/calculate | 直接计算结果 |
-| GET | /api/algorithm/basic | 获取基础算法 |
-| GET | /api/algorithms | 获取所有算法 |
-| GET | /api/variants | 获取题目变形 |
+### 6. 排行榜
+- 猜测次数榜
+- 速度排行榜
+- 我的排名展示
+
+## 完整文档
+
+详细的开发、部署、设计文档请查看 `docs/` 目录：
+
+- [快速开始指南](./docs/getting-started.md) - 环境配置、启动方式、常见问题
+- [部署文档](./docs/deployment.md) - 生产环境部署、Docker、Nginx、HTTPS
+- [系统设计](./docs/architecture.md) - 架构设计、数据库设计、安全设计
+- [API 文档](./docs/api.md) - 完整接口文档、请求响应示例
 
 ## 游戏规则
 

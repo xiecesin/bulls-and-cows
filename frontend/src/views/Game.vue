@@ -38,9 +38,13 @@
     
     <div v-else class="game-section">
       <div class="game-header">
-        <el-tag type="info" size="large">猜测次数：{{ guessCount }}</el-tag>
+        <div class="game-stats">
+          <el-tag type="info" size="large">猜测次数：{{ guessCount }}</el-tag>
+          <el-tag type="info" size="large">用时：{{ formatElapsedTime }}</el-tag>
+        </div>
         <div class="header-actions">
           <el-button @click="showAnswer" type="warning" plain>查看答案</el-button>
+          <el-button @click="quitGame" type="danger" plain v-if="!gameWon">放弃</el-button>
           <el-button @click="resetGame">重新开始</el-button>
         </div>
       </div>
@@ -102,9 +106,12 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { gameApi } from '../api'
+import { recordApi } from '@/api/record'
+import { useUserStore } from '@/stores/user'
 
+const userStore = useUserStore()
 const loading = ref(false)
 const gameStarted = ref(false)
 const gameId = ref('')
@@ -113,8 +120,18 @@ const history = ref([])
 const lastResult = ref(null)
 const guessCount = ref(0)
 const allowDuplicates = ref(true)
+const gameStartTime = ref(null)
+const secretNumber = ref('')
 
 const gameWon = computed(() => lastResult.value?.bulls === 4)
+
+const formatElapsedTime = computed(() => {
+  if (!gameStartTime.value) return '00:00'
+  const elapsed = Math.floor((Date.now() - gameStartTime.value) / 1000)
+  const minutes = Math.floor(elapsed / 60)
+  const seconds = elapsed % 60
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+})
 
 const startGame = async () => {
   loading.value = true
@@ -126,6 +143,7 @@ const startGame = async () => {
     lastResult.value = null
     guessCount.value = 0
     currentGuess.value = ''
+    gameStartTime.value = Date.now()
     ElMessage.success(response.data.message)
   } catch (error) {
     ElMessage.error('游戏初始化失败，请检查后端服务是否启动')
@@ -179,6 +197,8 @@ const submitGuess = async () => {
     
     if (data.success) {
       ElMessage.success(data.message)
+      // 游戏胜利，保存记录
+      saveRecord('WIN')
     }
     
     currentGuess.value = ''
@@ -189,6 +209,56 @@ const submitGuess = async () => {
 
 const resetGame = () => {
   startGame()
+}
+
+// 保存练习记录
+const saveRecord = async (gameResult) => {
+  if (!userStore.isLoggedIn) {
+    return
+  }
+
+  try {
+    const timeSpentMs = gameStartTime.value ? Date.now() - gameStartTime.value : 0
+    const secret = await getSecretNumber()
+    await recordApi.saveRecord({
+      secretNumber: secret,
+      guessCount: guessCount.value,
+      timeSpentMs: timeSpentMs,
+      allowDuplicates: allowDuplicates.value,
+      gameResult: gameResult
+    })
+  } catch (error) {
+    console.error('保存记录失败:', error)
+  }
+}
+
+// 放弃游戏
+const quitGame = async () => {
+  try {
+    await ElMessageBox.confirm('确定要放弃当前游戏吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '继续游戏',
+      type: 'warning'
+    })
+    // 保存放弃记录
+    await saveRecord('QUIT')
+    ElMessage.info('游戏已放弃')
+    // 重置游戏
+    startGame()
+  } catch {
+    // 用户取消
+  }
+}
+
+// 获取答案（仅在胜利或放弃时使用）
+const getSecretNumber = async () => {
+  try {
+    const response = await gameApi.getAnswer(gameId.value)
+    return response.data.answer
+  } catch (error) {
+    console.error('获取答案失败:', error)
+    return '****'
+  }
 }
 </script>
 
@@ -230,8 +300,13 @@ const resetGame = () => {
 }
 
 .game-section {
-  max-width: 600px;
+  max-width: 700px;
   margin: 0 auto;
+}
+
+.game-stats {
+  display: flex;
+  gap: 12px;
 }
 
 .game-header {

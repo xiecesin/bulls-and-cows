@@ -1,13 +1,20 @@
 package com.bullscows.controller;
 
+import com.bullscows.entity.PracticeRecord;
+import com.bullscows.entity.Ranking;
 import com.bullscows.model.AlgorithmModels;
 import com.bullscows.model.GameState;
 import com.bullscows.model.GuessResult;
 import com.bullscows.model.VariantsModels;
 import com.bullscows.service.GameService;
+import com.bullscows.service.PracticeRecordService;
+import com.bullscows.service.RankingService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +28,12 @@ public class GameController {
     
     @Autowired
     private GameService gameService;
+
+    @Autowired
+    private PracticeRecordService practiceRecordService;
+
+    @Autowired
+    private RankingService rankingService;
     
     /**
      * 开始新游戏（支持配置是否允许重复）
@@ -260,5 +273,168 @@ public class GameController {
     public Map<String, Object> generatePuzzle(@RequestBody(required = false) Map<String, Boolean> request) {
         boolean allowDuplicates = request != null && Boolean.TRUE.equals(request.get("allowDuplicates"));
         return gameService.generatePuzzle(allowDuplicates);
+    }
+
+    /**
+     * 保存练习记录
+     */
+    @PostMapping("/record/save")
+    public Map<String, Object> saveRecord(@RequestBody Map<String, Object> request,
+                                        Authentication authentication) {
+        if (authentication == null) {
+            return Map.of("error", "请先登录");
+        }
+
+        Long userId = getUserIdFromAuth(authentication);
+        if (userId == null) {
+            return Map.of("error", "无法获取用户信息");
+        }
+
+        try {
+            String secretNumber = (String) request.get("secretNumber");
+            Integer guessCount = (Integer) request.get("guessCount");
+            Long timeSpentMs = request.get("timeSpentMs") != null
+                    ? ((Number) request.get("timeSpentMs")).longValue() : 0L;
+            Boolean allowDuplicates = (Boolean) request.get("allowDuplicates");
+            String resultStr = (String) request.get("gameResult");
+            PracticeRecord.GameResult gameResult = "WIN".equals(resultStr)
+                    ? PracticeRecord.GameResult.WIN : PracticeRecord.GameResult.QUIT;
+
+            PracticeRecord record = practiceRecordService.createRecord(
+                    userId, secretNumber, guessCount, timeSpentMs, allowDuplicates, gameResult);
+
+            // 如果赢了，更新排行榜
+            if (gameResult == PracticeRecord.GameResult.WIN) {
+                rankingService.updateRanking(userId, record);
+            }
+
+            return Map.of(
+                    "success", true,
+                    "recordId", record.getId(),
+                    "message", "记录保存成功"
+            );
+        } catch (Exception e) {
+            return Map.of("error", "保存失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取用户的练习记录
+     */
+    @GetMapping("/record/list")
+    public Map<String, Object> getUserRecords(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Authentication authentication) {
+        if (authentication == null) {
+            return Map.of("error", "请先登录");
+        }
+
+        Long userId = getUserIdFromAuth(authentication);
+        if (userId == null) {
+            return Map.of("error", "无法获取用户信息");
+        }
+
+        Page<PracticeRecord> records = practiceRecordService.getUserRecords(userId, page, size);
+
+        List<Map<String, Object>> recordList = records.getContent().stream()
+                .map(r -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("id", r.getId());
+                    item.put("secretNumber", r.getSecretNumber());
+                    item.put("guessCount", r.getGuessCount());
+                    item.put("timeSpentMs", r.getTimeSpentMs());
+                    item.put("allowDuplicates", r.getAllowDuplicates());
+                    item.put("gameResult", r.getGameResult().name());
+                    item.put("createdAt", r.getCreatedAt());
+                    return item;
+                })
+                .toList();
+
+        return Map.of(
+                "records", recordList,
+                "totalPages", records.getTotalPages(),
+                "totalElements", records.getTotalElements(),
+                "currentPage", page
+        );
+    }
+
+    /**
+     * 获取用户统计数据
+     */
+    @GetMapping("/record/stats")
+    public Map<String, Object> getUserStatistics(Authentication authentication) {
+        if (authentication == null) {
+            return Map.of("error", "请先登录");
+        }
+
+        Long userId = getUserIdFromAuth(authentication);
+        if (userId == null) {
+            return Map.of("error", "无法获取用户信息");
+        }
+
+        return practiceRecordService.getUserStatistics(userId);
+    }
+
+    /**
+     * 获取排行榜
+     */
+    @GetMapping("/ranking")
+    public Map<String, Object> getRanking(
+            @RequestParam(defaultValue = "GUESS_COUNT") String type,
+            @RequestParam(defaultValue = "20") int limit) {
+        Ranking.RankingType rankingType = Ranking.RankingType.valueOf(type);
+        List<Map<String, Object>> rankings = rankingService.getRanking(rankingType, limit);
+        return Map.of("rankings", rankings, "type", type);
+    }
+
+    /**
+     * 获取用户在排行榜中的位置
+     */
+    @GetMapping("/ranking/me")
+    public Map<String, Object> getMyRanking(
+            @RequestParam(defaultValue = "GUESS_COUNT") String type,
+            Authentication authentication) {
+        if (authentication == null) {
+            return Map.of("error", "请先登录");
+        }
+
+        Long userId = getUserIdFromAuth(authentication);
+        if (userId == null) {
+            return Map.of("error", "无法获取用户信息");
+        }
+
+        Ranking.RankingType rankingType = Ranking.RankingType.valueOf(type);
+        Map<String, Object> ranking = rankingService.getUserRanking(userId, rankingType);
+
+        if (ranking == null) {
+            return Map.of("ranked", false, "message", "你还没有上榜，继续加油！");
+        }
+
+        ranking.put("ranked", true);
+        return ranking;
+    }
+
+    /**
+     * 从Authentication获取用户ID
+     */
+    private Long getUserIdFromAuth(Authentication authentication) {
+        if (authentication == null) {
+            return null;
+        }
+
+        // 尝试从主体中获取用户ID
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Long) {
+            return (Long) principal;
+        } else if (principal instanceof String) {
+            try {
+                return Long.parseLong((String) principal);
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
+        return null;
     }
 }

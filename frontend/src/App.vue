@@ -6,6 +6,54 @@
           <h1>🎯 猜数字游戏</h1>
           <span class="subtitle">Bulls and Cows</span>
         </div>
+        
+        <div class="header-right">
+          <!-- 未登录显示登录/注册按钮 -->
+          <template v-if="!userStore.isLoggedIn">
+            <el-button type="primary" plain @click="$router.push('/login')">
+              登录
+            </el-button>
+            <el-button @click="$router.push('/register')">
+              注册
+            </el-button>
+          </template>
+          
+          <!-- 已登录显示用户信息 -->
+          <template v-else>
+            <el-dropdown @command="handleUserCommand">
+              <span class="user-info">
+                <el-avatar 
+                  :size="36" 
+                  :src="userStore.avatarUrl || defaultAvatar"
+                >
+                  {{ userStore.nickname?.charAt(0) || 'U' }}
+                </el-avatar>
+                <span class="username">{{ userStore.nickname }}</span>
+                <el-icon><ArrowDown /></el-icon>
+              </span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="profile">
+                    <el-icon><User /></el-icon>
+                    个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item command="records">
+                    <el-icon><History /></el-icon>
+                    练习记录
+                  </el-dropdown-item>
+                  <el-dropdown-item command="ranking">
+                    <el-icon><Trophy /></el-icon>
+                    排行榜
+                  </el-dropdown-item>
+                  <el-dropdown-item divided command="logout">
+                    <el-icon><SwitchButton /></el-icon>
+                    退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+        </div>
       </el-header>
       
       <el-container>
@@ -39,6 +87,30 @@
               <el-icon><Collection /></el-icon>
               <span>变形研究</span>
             </el-menu-item>
+            
+            <!-- 登录后显示的菜单 -->
+            <el-menu-item-group title="用户功能" v-if="userStore.isLoggedIn">
+              <el-menu-item index="/collaboration">
+                <el-icon><Users /></el-icon>
+                <span>多人协作</span>
+              </el-menu-item>
+            </el-menu-item-group>
+            
+            <!-- 管理员菜单 -->
+            <el-menu-item-group title="管理后台" v-if="userStore.isAdmin">
+              <el-menu-item index="/admin">
+                <el-icon><Setting /></el-icon>
+                <span>管理首页</span>
+              </el-menu-item>
+              <el-menu-item index="/admin/users">
+                <el-icon><UserFilled /></el-icon>
+                <span>用户管理</span>
+              </el-menu-item>
+              <el-menu-item index="/admin/monitor">
+                <el-icon><Monitor /></el-icon>
+                <span>系统监控</span>
+              </el-menu-item>
+            </el-menu-item-group>
           </el-menu>
         </el-aside>
         
@@ -52,10 +124,46 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
+
 const activeMenu = computed(() => route.path)
+
+// 默认头像背景色
+const defaultAvatar = ''
+
+const handleUserCommand = async (command) => {
+  switch (command) {
+    case 'profile':
+      router.push('/profile')
+      break
+    case 'records':
+      router.push('/records')
+      break
+    case 'ranking':
+      router.push('/ranking')
+      break
+    case 'logout':
+      try {
+        await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+        await userStore.logout()
+        ElMessage.success('已退出登录')
+        router.push('/')
+      } catch {
+        // 用户取消
+      }
+      break
+  }
+}
 </script>
 
 <style>
@@ -80,6 +188,7 @@ body {
   color: white;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 0 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
@@ -98,6 +207,32 @@ body {
 .header-content .subtitle {
   font-size: 14px;
   color: #a0a0a0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 0.3s;
+}
+
+.user-info:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.username {
+  color: white;
+  font-size: 14px;
 }
 
 .app-aside {
