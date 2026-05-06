@@ -194,7 +194,7 @@ public class AlgorithmModels {
     /**
      * 哈希表算法 - Java 实现
      */
-    public static AlgorithmModels getHashAlgorithm() {
+    public static AlgorithmModels getHashAlgorithmJava() {
         String code = 
             "import java.util.HashMap;\n" +
             "import java.util.Map;\n" +
@@ -238,6 +238,58 @@ public class AlgorithmModels {
             "Java",
             code,
             "使用HashMap分别统计秘密数字和猜测数字中非公牛部分的出现次数，然后取最小值得到奶牛数量。",
+            "时间: O(n), 空间: O(k)"
+        );
+    }
+    
+    /**
+     * 哈希表算法 - Python 实现
+     */
+    public static AlgorithmModels getHashAlgorithmPython() {
+        String code = 
+            "# 使用字典的算法 - Python 实现\n" +
+            "# 时间复杂度: O(n)\n" +
+            "# 空间复杂度: O(k)，k为数字种类数\n" +
+            "\n" +
+            "def get_hint(secret: str, guess: str) -> str:\n" +
+            "    '''\n" +
+            "    使用字典（哈希表）计算猜测结果提示\n" +
+            "    \n" +
+            "    Args:\n" +
+            "        secret: 秘密数字\n" +
+            "        guess: 猜测数字\n" +
+            "    \n" +
+            "    Returns:\n" +
+            "        格式化的提示字符串，如 1A1B\n" +
+            "    '''\n" +
+            "    bulls = 0\n" +
+            "    secret_count = {}\n" +
+            "    guess_count = {}\n" +
+            "    \n" +
+            "    for i in range(len(secret)):\n" +
+            "        s, g = secret[i], guess[i]\n" +
+            "        if s == g:\n" +
+            "            bulls += 1\n" +
+            "        else:\n" +
+            "            secret_count[s] = secret_count.get(s, 0) + 1\n" +
+            "            guess_count[g] = guess_count.get(g, 0) + 1\n" +
+            "    \n" +
+            "    # 统计奶牛数量\n" +
+            "    cows = 0\n" +
+            "    for digit in guess_count:\n" +
+            "        if digit in secret_count:\n" +
+            "            cows += min(secret_count[digit], guess_count[digit])\n" +
+            "    \n" +
+            "    return f\"{bulls}A{cows}B\"\n" +
+            "\n" +
+            "# 测试\n" +
+            "if __name__ == \"__main__\":\n" +
+            "    print(get_hint(\"1123\", \"0111\"))  # 输出: 1A1B\"\n";
+        return new AlgorithmModels(
+            "哈希表算法",
+            "Python",
+            code,
+            "使用dict（字典/哈希表）分别统计秘密数字和猜测数字中非公牛部分的出现次数，然后取最小值得到奶牛数量。Python的dict实现简洁高效。",
             "时间: O(n), 空间: O(k)"
         );
     }

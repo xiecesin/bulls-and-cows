@@ -176,7 +176,8 @@ public class GameController {
                 AlgorithmModels.getBasicJavaAlgorithm(),
                 AlgorithmModels.getBasicPythonAlgorithm(),
                 AlgorithmModels.getOptimizedJavaAlgorithm(),
-                AlgorithmModels.getHashAlgorithm()
+                AlgorithmModels.getHashAlgorithmJava(),
+                AlgorithmModels.getHashAlgorithmPython()
             )
         );
     }

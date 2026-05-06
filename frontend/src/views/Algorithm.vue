@@ -107,14 +107,15 @@ const algorithms = ref({
     hash: null
   },
   python: {
-    basic: null
+    basic: null,
+    advanced: null,
+    hash: null
   }
 })
 
 const currentAlgorithm = ref(null)
 
 const loadAlgorithm = async () => {
-  const key = `${activeLanguage.value}_${activeAlgorithm.value}`
   const cache = algorithms.value[activeLanguage.value]?.[activeAlgorithm.value]
   
   if (cache) {
@@ -126,15 +127,17 @@ const loadAlgorithm = async () => {
   try {
     let response
     if (activeAlgorithm.value === 'hash') {
+      // 哈希表算法：从 getAll 获取并根据语言选择
       response = await algorithmApi.getAll()
-      const algo = response.data.algorithms.find(a => a.name.includes('哈希'))
+      const algo = response.data.algorithms.find(a => 
+        a.name.includes('哈希') && a.language.toLowerCase() === activeLanguage.value
+      )
       if (algo) {
         currentAlgorithm.value = algo
-        if (!algorithms.value.java.hash) {
-          algorithms.value.java.hash = algo
-        }
+        algorithms.value[activeLanguage.value].hash = algo
       }
     } else {
+      // 基础算法和优化算法
       const type = activeAlgorithm.value === 'basic' ? 'basic' : 'advanced'
       response = await algorithmApi.getBasic(activeLanguage.value)
       if (response.data.code) {
