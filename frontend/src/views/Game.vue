@@ -21,6 +21,13 @@
         </template>
       </el-alert>
       
+      <div class="start-options">
+        <div class="option-item">
+          <span class="option-label">允许重复数字：</span>
+          <el-switch v-model="allowDuplicates" />
+        </div>
+      </div>
+      
       <div class="start-section">
         <el-button type="primary" size="large" @click="startGame" :loading="loading">
           <el-icon><VideoPlay /></el-icon>
@@ -32,7 +39,10 @@
     <div v-else class="game-section">
       <div class="game-header">
         <el-tag type="info" size="large">猜测次数：{{ guessCount }}</el-tag>
-        <el-button @click="resetGame">重新开始</el-button>
+        <div class="header-actions">
+          <el-button @click="showAnswer" type="warning" plain>查看答案</el-button>
+          <el-button @click="resetGame">重新开始</el-button>
+        </div>
       </div>
       
       <div class="guess-input">
@@ -102,13 +112,14 @@ const currentGuess = ref('')
 const history = ref([])
 const lastResult = ref(null)
 const guessCount = ref(0)
+const allowDuplicates = ref(true)
 
 const gameWon = computed(() => lastResult.value?.bulls === 4)
 
 const startGame = async () => {
   loading.value = true
   try {
-    const response = await gameApi.startGame()
+    const response = await gameApi.startGame(allowDuplicates.value)
     gameId.value = response.data.gameId
     gameStarted.value = true
     history.value = []
@@ -120,6 +131,15 @@ const startGame = async () => {
     ElMessage.error('游戏初始化失败，请检查后端服务是否启动')
   } finally {
     loading.value = false
+  }
+}
+
+const showAnswer = async () => {
+  try {
+    const response = await gameApi.getAnswer(gameId.value)
+    ElMessage.info('答案是：' + response.data.answer)
+  } catch (error) {
+    ElMessage.error('获取答案失败')
   }
 }
 
@@ -184,7 +204,29 @@ const resetGame = () => {
 
 .start-section {
   text-align: center;
-  padding: 40px 0;
+  padding: 20px 0 40px;
+}
+
+.start-options {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.option-label {
+  font-size: 14px;
+  color: #606266;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .game-section {

@@ -23,15 +23,20 @@ public class GameController {
     private GameService gameService;
     
     /**
-     * 开始新游戏
+     * 开始新游戏（支持配置是否允许重复）
      */
     @PostMapping("/game/start")
-    public Map<String, Object> startGame() {
-        GameState game = gameService.startNewGame();
+    public Map<String, Object> startGame(@RequestBody(required = false) Map<String, Boolean> request) {
+        boolean allowDuplicates = request != null && Boolean.TRUE.equals(request.get("allowDuplicates"));
+        GameState game = gameService.startNewGame(allowDuplicates);
+        String hint = allowDuplicates 
+            ? "提示：可以包含重复数字，如 1123, 7777 等"
+            : "提示：4位数字各不相同，如 1234, 5678 等";
         return Map.of(
             "gameId", game.getGameId(),
+            "allowDuplicates", allowDuplicates,
             "message", "新游戏已开始！请输入4位数字进行猜测。",
-            "hint", "提示：可以包含重复数字，如 1123, 7777 等"
+            "hint", hint
         );
     }
     
@@ -215,5 +220,44 @@ public class GameController {
             "service", "Bulls and Cows API",
             "version", "1.0.0"
         );
+    }
+    
+    /**
+     * 查看游戏答案
+     */
+    @GetMapping("/game/{gameId}/answer")
+    public Map<String, Object> getAnswer(@PathVariable String gameId) {
+        String answer = gameService.getAnswer(gameId);
+        if (answer == null) {
+            return Map.of("error", "游戏不存在");
+        }
+        return Map.of(
+            "gameId", gameId,
+            "answer", answer
+        );
+    }
+    
+    /**
+     * 验证谜题答案
+     */
+    @PostMapping("/puzzle/verify")
+    public Map<String, Object> verifyAnswer(@RequestBody Map<String, String> request) {
+        String puzzleId = request.get("puzzleId");
+        String answer = request.get("answer");
+        
+        if (puzzleId == null || answer == null) {
+            return Map.of("error", "参数不完整");
+        }
+        
+        return gameService.verifyAnswer(puzzleId, answer);
+    }
+    
+    /**
+     * 生成推理谜题
+     */
+    @PostMapping("/puzzle/generate")
+    public Map<String, Object> generatePuzzle(@RequestBody(required = false) Map<String, Boolean> request) {
+        boolean allowDuplicates = request != null && Boolean.TRUE.equals(request.get("allowDuplicates"));
+        return gameService.generatePuzzle(allowDuplicates);
     }
 }

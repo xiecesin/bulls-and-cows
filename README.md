@@ -67,7 +67,7 @@ npm install
 npm run dev
 ```
 
-前端服务将在 http://localhost:3000 启动
+前端服务将在 http://localhost:3000 启动（端口被占用时自动切换）
 
 ## 功能模块
 

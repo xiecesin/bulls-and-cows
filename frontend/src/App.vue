@@ -23,6 +23,10 @@
               <el-icon><VideoPlay /></el-icon>
               <span>练习游戏</span>
             </el-menu-item>
+            <el-menu-item index="/puzzle">
+              <el-icon><MagicStick /></el-icon>
+              <span>推理练习</span>
+            </el-menu-item>
             <el-menu-item index="/reasoning">
               <el-icon><Connection /></el-icon>
               <span>推理解析</span>
