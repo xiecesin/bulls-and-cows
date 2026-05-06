@@ -29,6 +29,28 @@ if [ ! -d "$FRONTEND_DIR" ]; then
     exit 1
 fi
 
+# 检查并停止已运行的服务
+echo -e "\n${YELLOW}[检查服务状态]${NC}"
+
+# 检查后端 (端口 8080)
+BACKEND_PID=$(lsof -ti :8080 2>/dev/null)
+if [ -n "$BACKEND_PID" ]; then
+    echo -e "${YELLOW}后端服务已在运行 (PID: $BACKEND_PID)，正在重启...${NC}"
+    kill $BACKEND_PID 2>/dev/null
+    sleep 2
+fi
+
+# 检查前端 (端口 3000)
+FRONTEND_PID=$(lsof -ti :3000 2>/dev/null)
+if [ -n "$FRONTEND_PID" ]; then
+    echo -e "${YELLOW}前端服务已在运行 (PID: $FRONTEND_PID)，正在重启...${NC}"
+    kill $FRONTEND_PID 2>/dev/null
+    sleep 2
+fi
+
+# 确认端口已释放
+sleep 1
+
 # 启动后端
 echo -e "\n${YELLOW}[1/2] 启动后端服务...${NC}"
 cd "$BACKEND_DIR"
@@ -36,7 +58,7 @@ cd "$BACKEND_DIR"
 # 检查是否有 mvnw
 if [ -f "./mvnw" ]; then
     chmod +x ./mvnw
-    ./mvnw spring-boot:run &
+    ./mvnw spring-boot:run > ../backend.log 2>&1 &
     BACKEND_PID=$!
     echo -e "${GREEN}后端服务启动中 (PID: $BACKEND_PID)${NC}"
 else
@@ -46,7 +68,7 @@ fi
 
 # 等待后端启动
 echo -e "${YELLOW}等待后端服务启动...${NC}"
-sleep 8
+sleep 10
 
 # 检查后端是否启动成功
 if ! kill -0 $BACKEND_PID 2>/dev/null; then
@@ -64,12 +86,12 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-npm run dev &
+npm run dev > ../frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo -e "${GREEN}前端服务启动中 (PID: $FRONTEND_PID)${NC}"
 
 # 等待前端启动
-sleep 5
+sleep 3
 
 echo -e "\n${GREEN}========================================${NC}"
 echo -e "${GREEN}         所有服务启动成功！            ${NC}"
@@ -81,8 +103,7 @@ echo -e "  - H2控制台: http://localhost:8080/h2-console"
 echo -e "\n${YELLOW}进程ID:${NC}"
 echo -e "  - 后端: $BACKEND_PID"
 echo -e "  - 前端: $FRONTEND_PID"
-echo -e "\n${YELLOW}停止服务: kill $BACKEND_PID $FRONTEND_PID${NC}"
-echo -e "${YELLOW}或使用: ./stop.sh${NC}"
+echo -e "\n${YELLOW}停止服务: ./stop.sh${NC}"
 
 # 保存进程ID
 echo "$BACKEND_PID $FRONTEND_PID" > "$SCRIPT_DIR/.pids"
