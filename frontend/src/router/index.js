@@ -60,6 +60,30 @@ const routes = [
     path: '/ranking',
     name: 'Ranking',
     component: () => import('../views/Ranking.vue')
+  },
+  {
+    path: '/collaboration',
+    name: 'Collaboration',
+    component: () => import('../views/Collaboration.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin',
+    name: 'AdminIndex',
+    component: () => import('../views/admin/Index.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/users',
+    name: 'AdminUsers',
+    component: () => import('../views/admin/Users.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/monitor',
+    name: 'AdminMonitor',
+    component: () => import('../views/admin/Monitor.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 

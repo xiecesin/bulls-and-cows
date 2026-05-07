@@ -54,16 +54,23 @@ public class DataInitializer implements CommandLineRunner {
             testEmail = test.getOrDefault("email", testEmail);
         }
         
-        // 创建管理员账户
-        if (!userRepository.existsByUsername(adminUser)) {
-            User user = new User();
-            user.setUsername(adminUser);
-            user.setPassword(passwordEncoder.encode(adminPass));
-            user.setEmail(adminEmail);
-            user.setRole(User.Role.ADMIN);
-            user.setStatus(User.Status.ACTIVE);
-            userRepository.save(user);
+        // 创建或更新管理员账户
+        User adminUserEntity = userRepository.findByUsername(adminUser).orElse(null);
+        if (adminUserEntity == null) {
+            adminUserEntity = new User();
+            adminUserEntity.setUsername(adminUser);
+            adminUserEntity.setPassword(passwordEncoder.encode(adminPass));
+            adminUserEntity.setEmail(adminEmail);
+            adminUserEntity.setRole(User.Role.ADMIN);
+            adminUserEntity.setStatus(User.Status.ACTIVE);
+            userRepository.save(adminUserEntity);
             System.out.println("✓ 管理员账户已创建: " + adminUser + " / " + adminPass);
+        } else if (adminUserEntity.getRole() != User.Role.ADMIN) {
+            // 确保 admin 用户的角色是 ADMIN
+            adminUserEntity.setRole(User.Role.ADMIN);
+            adminUserEntity.setStatus(User.Status.ACTIVE);
+            userRepository.save(adminUserEntity);
+            System.out.println("✓ 管理员角色已更新: " + adminUser);
         }
         
         // 创建测试账户

@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/algorithms").permitAll() // 算法接口公开
                 .requestMatchers("/api/variants/**").permitAll()// 变形接口公开
                 .requestMatchers("/api/algorithm/**").permitAll()// 算法详情公开
+                .requestMatchers("/api/collaboration/**").permitAll() // 协作接口（需要登录验证由controller处理）
                 .requestMatchers("/h2-console/**").permitAll()
                 // 允许 OPTIONS 请求
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Admin API</title>
+</head>
+<body>
+    <h1>Test Admin API</h1>
+    <button onclick="login()">Login as admin</button>
+    <button onclick="testStats()">Test /api/admin/stats</button>
+    <pre id="output"></pre>
+    
+    <script>
+        let token = '';
+        
+        function log(msg) {
+            document.getElementById('output').textContent += msg + '\n';
+        }
+        
+        async function login() {
+            const res = await fetch('http://localhost:3000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            });
+            const data = await res.json();
+            token = data.data.token;
+            log('Token: ' + token);
+            
+            // Decode and show role
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            log('Role in token: ' + payload.role);
+        }
+        
+        async function testStats() {
+            log('Testing with token: ' + token.substring(0, 50) + '...');
+            
+            const res = await fetch('http://localhost:3000/api/admin/stats', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            
+            log('Status: ' + res.status);
+            const text = await res.text();
+            log('Response: ' + text);
+        }
+    </script>
+</body>
+</html>
